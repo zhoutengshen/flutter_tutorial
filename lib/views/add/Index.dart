@@ -27,7 +27,8 @@ class AddPage extends StatelessWidget {
                       return Switch(
                         value: isSelectd,
                         onChanged: (r) {
-                          print(r);
+                          (ctx as Element).markNeedsBuild();
+                          isSelectd = !isSelectd;
                         },
                       );
                     },
