@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tutorial/entities/TodoTask.dart';
+import 'package:flutter_tutorial/mock/index.dart';
 import 'package:provider/provider.dart';
 import './TodosModel.dart';
 
@@ -11,12 +11,6 @@ class StoreProvider extends StatefulWidget {
   @override
   _StoreProviderState createState() => _StoreProviderState();
 }
-
-List<TodoTask> todoList = [
-  TodoTask("task 1", false),
-  TodoTask("task 2", true),
-  TodoTask("task 3", false)
-];
 
 class _StoreProviderState extends State<StoreProvider> {
   int _count = 10;
@@ -30,7 +24,7 @@ class _StoreProviderState extends State<StoreProvider> {
         //1. 使用 .value 构造函数是否一定会产生side effect
         //2. build 一旦执行了，状态就丢失了。如何处理？
         ChangeNotifierProvider(
-          create: (_) => TodosModel.init(todoList),
+          create: (_) => TodosModel.init(Mock.todoList),
         ),
         Provider.value(value: _count),
       ],
