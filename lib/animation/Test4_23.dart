@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 
 import '../Entry.dart';
 
-void main() => runApp(MyEntry(widget: PositionTest(),));
-
+void main() =>
+    runApp(MyEntry(
+      widget: PositionTest(),
+    ));
 
 class PositionTest extends StatelessWidget {
   @override
@@ -46,9 +48,18 @@ class PositionTestState extends State<PositionTestStateWidget>
     animation = new Tween(begin: 0.0, end: 30.0).animate(controller)
       ..addListener(() {
         setState(() => {});
+      })
+      ..addStatusListener((s) {
+        if (s == AnimationStatus.completed) {
+          setState(() => this.fullScreen = true);
+        } else if (s == AnimationStatus.reverse) {
+          setState(() => this.fullScreen = false);
+        }
       });
     //启动动画(正向执行)
   }
+
+  bool fullScreen = false;
 
   add() {
     controller.forward();
@@ -62,17 +73,20 @@ class PositionTestState extends State<PositionTestStateWidget>
     return Column(
       children: []
         ..addAll(myIcons
-            .map((icon) => SizedBox(
-          child: ClipRect(
-            child: Icon(icon),
-          ),
-          height: animation.value,
-          width: animation.value,
-        ))
+            .map(
+              (icon) =>
+              Container(
+                child: ClipRRect(
+                  child: Icon(icon),
+                ),
+                height: animation.value,
+                width: animation.value,
+              ),
+        )
             .toList())
         ..add(GestureDetector(
           onTap: add,
-          child: SizedBox(
+          child: Container(
             height: 30,
             width: 30,
             child: Icon(Icons.add),
@@ -86,14 +100,28 @@ class PositionTestState extends State<PositionTestStateWidget>
     return Stack(
       children: <Widget>[
         Positioned(
+          top: 0,
+          left: 0,
+          child:GestureDetector(
+            behavior: HitTestBehavior.translucent,// 必须加这个  否则点击空白处会没有反应
+            child: Container(
+//              decoration: BoxDecoration(color: Colors.red),
+              width: fullScreen ? 1000 : 0,
+              height: fullScreen ? 1000 : 0,
+            ),
+            onTap: ()=>controller.reverse(),
+          ),
+        ),
+        Positioned(
           right: 100,
           bottom: 300,
           child: DecoratedBox(
             decoration: BoxDecoration(
-                color: Colors.red, borderRadius: BorderRadius.circular(10)),
+                color: Colors.lightBlue,
+                borderRadius: BorderRadius.circular(10)),
             child: _buildIcons(),
           ),
-        )
+        ),
       ],
     );
   }
