@@ -46,7 +46,7 @@ class TimerTestState extends State<TimerTestWidget> {
             onPressed: () {
               DateTime startTime = DateTime.now();
               DeviceTimeStruct ds = DeviceTimeStruct(
-                  "DEVICE_1", startTime, startTime.add(Duration(minutes: 20)));
+                  "DEVICE_1", startTime, startTime.add(Duration(minutes: 1)));
               heightSpeedModelDevicesTimer.addDevice(ds);
             },
           ),
@@ -55,7 +55,7 @@ class TimerTestState extends State<TimerTestWidget> {
             onPressed: () {
               DateTime startTime = DateTime.now();
               DeviceTimeStruct ds = DeviceTimeStruct(
-                  "DEVICE_2", startTime, startTime.add(Duration(minutes: 5)));
+                  "DEVICE_2", startTime, startTime.add(Duration(minutes: 2)));
               heightSpeedModelDevicesTimer.addDevice(ds);
             },
           ),
@@ -117,9 +117,12 @@ class HeightSpeedModelDevicesTimer {
 
   /// 计时器开始计时
   start() {
-    _timer = Timer.periodic(duration, (Timer timer) {
-      _callbackAll(callbackStatus: CallbackStatus.NORMAL);
-    });
+    if (_timer == null) {
+      _timer = Timer.periodic(duration, (Timer timer) {
+        _callbackAll(callbackStatus: CallbackStatus.NORMAL);
+      });
+      print("启动计时器");
+    }
   }
 
   /// 添加注册的回调
@@ -147,10 +150,28 @@ class HeightSpeedModelDevicesTimer {
         if (item.deviceNo == selectedDeviceNo) {
           selectedDeviceTimeStruct = item;
         }
+      } else {
+        String deviceNo = item.deviceNo;
+        print("设备$deviceNo：结束高速模式");
       }
     });
     _devices = tempList;
     callbacks.forEach((f) => f(selectedDeviceTimeStruct, callbackStatus));
+    // 做些少优化
+    _updateTimerStatus();
+  }
+
+  // 更新计时器状态
+  _updateTimerStatus() {
+    if (_timer != null && _timer.isActive && _devices.isEmpty) {
+      // 如果 没有设备开启高速模式，那么关闭计时器
+      print("定时器处于活跃状态，当高速设备列表为空，即将关闭");
+      destroy();
+    } else if ((_timer == null || !_timer.isActive) && _devices.isNotEmpty) {
+      // 如果 定时器处于 关闭状态 且高速设备列表不为空，开启定时器；
+      print("定时器处于非活跃状态，当高速设备列表不为空，即将开启");
+      start();
+    }
   }
 
   /// 选择某个设备同时触发回调
@@ -184,6 +205,7 @@ class HeightSpeedModelDevicesTimer {
     if (_timer != null) {
       _timer.cancel();
       _timer = null;
+      print("销毁计时器");
     }
   }
 }
@@ -208,7 +230,6 @@ class HeightSpeedModelDevicesTimerState
   void initState() {
     super.initState();
     widget.timer.start();
-    HeightSpeedModelDevicesTimerCallback a = _timerCallback;
     widget.timer.addCallback(_timerCallback);
   }
 
@@ -231,9 +252,8 @@ class HeightSpeedModelDevicesTimerState
     return RepaintBoundary(
       child: !showSelectedDevice
           ? Container()
-          : Text((currentTime -
-                  selectedDeviceTimeStruct
-                      .startTimestamp.millisecondsSinceEpoch)
+          : Text((selectedDeviceTimeStruct.endTimestamp.millisecondsSinceEpoch -
+                  currentTime)
               .toString()),
     );
   }
