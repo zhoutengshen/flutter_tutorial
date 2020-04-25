@@ -71,19 +71,19 @@ class DeviceTimeStruct {
   final String deviceNo;
 
   /// 开启告诉模式的时间戳
-  final DateTime startTimestamp;
+  final DateTime startDateTime;
 
-  final DateTime endTimestamp;
+  final DateTime endDateTime;
 
   DeviceTimeStruct(
     this.deviceNo,
-    this.startTimestamp,
-    this.endTimestamp,
-  ) : assert(deviceNo != null && startTimestamp != null);
+    this.startDateTime,
+    this.endDateTime,
+  ) : assert(deviceNo != null && startDateTime != null);
 
   @override
   String toString() {
-    return "{deviceNo:$deviceNo,startTimestamp:$startTimestamp}";
+    return "{deviceNo:$deviceNo,startTimestamp:$startDateTime}";
   }
 }
 
@@ -91,11 +91,7 @@ class DeviceTimeStruct {
 /// 2.添加设备发生回调
 /// 3.设备选择时发生回调
 /// 4. 设备到达时间发生回调，
-enum CallbackStatus {
-  NORMAL,
-  ADD,
-  SELECTED,
-}
+enum CallbackStatus { NORMAL, ADD, SELECTED, COMPLETE }
 
 typedef HeightSpeedModelDevicesTimerCallback = void
     Function(DeviceTimeStruct devices, [CallbackStatus callbackStatus]);
@@ -144,7 +140,7 @@ class HeightSpeedModelDevicesTimer {
     DeviceTimeStruct selectedDeviceTimeStruct;
     List<DeviceTimeStruct> tempList = [];
     _devices.forEach((item) {
-      if (item.endTimestamp.millisecondsSinceEpoch >=
+      if (item.endDateTime.millisecondsSinceEpoch >=
           currentTime.millisecondsSinceEpoch) {
         tempList.add(item);
         if (item.deviceNo == selectedDeviceNo) {
@@ -152,6 +148,7 @@ class HeightSpeedModelDevicesTimer {
         }
       } else {
         String deviceNo = item.deviceNo;
+        // 设备完成回调？？？？
         print("设备$deviceNo：结束高速模式");
       }
     });
@@ -252,7 +249,7 @@ class HeightSpeedModelDevicesTimerState
     return RepaintBoundary(
       child: !showSelectedDevice
           ? Container()
-          : Text((selectedDeviceTimeStruct.endTimestamp.millisecondsSinceEpoch -
+          : Text((selectedDeviceTimeStruct.endDateTime.millisecondsSinceEpoch -
                   currentTime)
               .toString()),
     );
