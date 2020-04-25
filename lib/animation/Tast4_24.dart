@@ -44,20 +44,18 @@ class TimerTestState extends State<TimerTestWidget> {
           RaisedButton(
             child: Text("ADD DEVICE 1"),
             onPressed: () {
+              DateTime startTime = DateTime.now();
               DeviceTimeStruct ds = DeviceTimeStruct(
-                  "DEVICE_1",
-                  DateTime.now().millisecondsSinceEpoch,
-                  DateTime.now().millisecondsSinceEpoch + 1000 * 60 * 5);
+                  "DEVICE_1", startTime, startTime.add(Duration(minutes: 20)));
               heightSpeedModelDevicesTimer.addDevice(ds);
             },
           ),
           RaisedButton(
             child: Text("ADD DEVICE 2"),
             onPressed: () {
+              DateTime startTime = DateTime.now();
               DeviceTimeStruct ds = DeviceTimeStruct(
-                  "DEVICE_2",
-                  DateTime.now().millisecondsSinceEpoch,
-                  DateTime.now().millisecondsSinceEpoch + 1000 * 60 * 20);
+                  "DEVICE_2", startTime, startTime.add(Duration(minutes: 5)));
               heightSpeedModelDevicesTimer.addDevice(ds);
             },
           ),
@@ -73,9 +71,9 @@ class DeviceTimeStruct {
   final String deviceNo;
 
   /// 开启告诉模式的时间戳
-  final int startTimestamp;
+  final DateTime startTimestamp;
 
-  final int endTimestamp;
+  final DateTime endTimestamp;
 
   DeviceTimeStruct(
     this.deviceNo,
@@ -119,7 +117,6 @@ class HeightSpeedModelDevicesTimer {
 
   /// 计时器开始计时
   start() {
-    print('start');
     _timer = Timer.periodic(duration, (Timer timer) {
       _callbackAll(callbackStatus: CallbackStatus.NORMAL);
     });
@@ -140,11 +137,12 @@ class HeightSpeedModelDevicesTimer {
   /// 标记已完成
   /// 清除已成为
   _callbackAll({callbackStatus}) {
-    int currentTime = DateTime.now().millisecondsSinceEpoch;
+    DateTime currentTime = DateTime.now();
     DeviceTimeStruct selectedDeviceTimeStruct;
     List<DeviceTimeStruct> tempList = [];
     _devices.forEach((item) {
-      if (item.endTimestamp >= currentTime) {
+      if (item.endTimestamp.millisecondsSinceEpoch >=
+          currentTime.millisecondsSinceEpoch) {
         tempList.add(item);
         if (item.deviceNo == selectedDeviceNo) {
           selectedDeviceTimeStruct = item;
@@ -233,7 +231,9 @@ class HeightSpeedModelDevicesTimerState
     return RepaintBoundary(
       child: !showSelectedDevice
           ? Container()
-          : Text((currentTime - selectedDeviceTimeStruct.startTimestamp)
+          : Text((currentTime -
+                  selectedDeviceTimeStruct
+                      .startTimestamp.millisecondsSinceEpoch)
               .toString()),
     );
   }
