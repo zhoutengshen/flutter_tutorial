@@ -110,7 +110,12 @@ class PositionTestState extends State<PositionTestStateWidget>
             .map(
               (icon) => Container(
                 child: ClipRRect(
-                  child: Icon(icon),
+                  child: IconButton(
+                    icon: Icon(icon),
+                    onPressed: (){
+                      controller.reverse();
+                    },
+                  ),
                 ),
                 height: animation.value,
                 width: animation.value,
