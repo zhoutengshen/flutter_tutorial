@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../Entry.dart';
 
-void main() =>
-    runApp(MyEntry(
+void main() => runApp(MyEntry(
       widget: PositionTest(),
     ));
 
@@ -13,8 +12,44 @@ class PositionTest extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        body: PositionTestStateWidget(),
+        body: StackTest(),
       ),
+    );
+  }
+}
+
+class StackTest extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return Stack(
+      children: <Widget>[
+        Positioned(
+          left: 30,
+          top: 30,
+          child: RaisedButton(
+            child: Text("TOP"),
+            onPressed: () {
+              print("TOP");
+            },
+          ),
+        ),
+        Positioned(
+          right: 30,
+          top: 30,
+          child: RaisedButton(
+            child: Text("LEFT"),
+          ),
+        ),
+        Positioned(
+          left: 30,
+          bottom: 30,
+          child: RaisedButton(
+            child: Text("bottom"),
+          ),
+        ),
+        PositionTestStateWidget(),
+      ],
     );
   }
 }
@@ -69,20 +104,18 @@ class PositionTestState extends State<PositionTestStateWidget>
   }
 
   _buildIcons() {
-    print(animation);
     return Column(
       children: []
         ..addAll(myIcons
             .map(
-              (icon) =>
-              Container(
+              (icon) => Container(
                 child: ClipRRect(
                   child: Icon(icon),
                 ),
                 height: animation.value,
                 width: animation.value,
               ),
-        )
+            )
             .toList())
         ..add(GestureDetector(
           onTap: add,
@@ -102,14 +135,14 @@ class PositionTestState extends State<PositionTestStateWidget>
         Positioned(
           top: 0,
           left: 0,
-          child:GestureDetector(
-            behavior: HitTestBehavior.translucent,// 必须加这个  否则点击空白处会没有反应
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent, // 必须加这个  否则点击空白处会没有反应
             child: Container(
 //              decoration: BoxDecoration(color: Colors.red),
               width: fullScreen ? 1000 : 0,
               height: fullScreen ? 1000 : 0,
             ),
-            onTap: ()=>controller.reverse(),
+            onTap: () => controller.reverse(),
           ),
         ),
         Positioned(
