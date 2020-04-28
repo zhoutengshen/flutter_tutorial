@@ -137,19 +137,19 @@ class PositionTestState extends State<PositionTestStateWidget>
   Widget build(BuildContext context) {
     return Stack(
       children: <Widget>[
-        Positioned(
-          top: 0,
-          left: 0,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent, // 必须加这个  否则点击空白处会没有反应
-            child: Container(
-//              decoration: BoxDecoration(color: Colors.red),
-              width: fullScreen ? 1000 : 0,
-              height: fullScreen ? 1000 : 0,
-            ),
-            onTap: () => controller.reverse(),
-          ),
-        ),
+//        Positioned(
+//          top: 0,
+//          left: 0,
+//          child: GestureDetector(
+//            behavior: HitTestBehavior.translucent, // 必须加这个  否则点击空白处会没有反应
+//            child: Container(
+////              decoration: BoxDecoration(color: Colors.red),
+//              width: fullScreen ? 1000 : 0,
+//              height: fullScreen ? 1000 : 0,
+//            ),
+//            onTap: () => controller.reverse(),
+//          ),
+//        ),
         Positioned(
           right: 100,
           bottom: 300,
