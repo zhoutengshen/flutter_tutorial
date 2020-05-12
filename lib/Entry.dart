@@ -9,6 +9,7 @@ class MyEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
+        appBar: AppBar(),
         body:widget,
       ),
     );
