@@ -1,8 +1,14 @@
+import 'dart:async';
+import 'dart:math';
+import 'dart:ui';
+
 import 'package:amap_map_fluttify/amap_map_fluttify.dart';
 import 'package:decorated_flutter/decorated_flutter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 class Test extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -42,12 +48,40 @@ class AmapWidget extends StatefulWidget {
 class _AmapWidgetState extends State<AmapWidget> {
   double height = 500;
   AmapController _controller;
+  List<Marker> _markers = [];
+
   _navToMyPosition() async {
     LatLng latlng = await _controller.getLocation();
     double leval = await _controller.getZoomLevel();
     print('===================');
     print(latlng);
-    _controller.setCenterCoordinate(latlng,zoomLevel: leval);
+    _controller.setCenterCoordinate(latlng, zoomLevel: leval);
+  }
+
+  Widget _buildMarker({Color color = Colors.red}) {
+    return Container(
+      height: 30,
+      width: 30,
+      child: IconButton(
+        icon: Icon(
+          Icons.favorite_border,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Future<MarkerOption> createMarkerOption(LatLng latlng,
+      {Color color = Colors.red}) async {
+    double lat = Random.secure().nextDouble() + latlng.latitude;
+    double lon = Random.secure().nextDouble() + latlng.longitude;
+    LatLng latLng1 = new LatLng(lat, lon);
+    return MarkerOption(
+      anchorU: 0.5,
+      anchorV: 0.5,
+      latLng: latLng1,
+      widget: _buildMarker(color: color),
+    );
   }
 
   @override
@@ -57,9 +91,9 @@ class _AmapWidgetState extends State<AmapWidget> {
       children: <Widget>[
         Container(
           height: height,
-          child:AmapView(
+          child: AmapView(
             // 地图类型 (可选)
-            mapType:  MapType.Standard,
+            mapType: MapType.Standard,
             // 是否显示缩放控件 (可选)
             showZoomControl: false,
             // 是否显示指南针控件 (可选)
@@ -75,43 +109,86 @@ class _AmapWidgetState extends State<AmapWidget> {
             // 是否使能倾斜手势 (可选)
             tiltGestureEnabled: false,
             // 缩放级别 (可选)
-            zoomLevel:12,
+            zoomLevel: 12,
             // 中心点坐标 (可选)
             centerCoordinate: LatLng(39, 116),
             // 标记 (可选)
             markers: <MarkerOption>[],
             onMapCreated: (controller) async {
-              if (await requestPermission())  {
+              if (await requestPermission()) {
                 _controller = controller;
-                await controller.showMyLocation(MyLocationOption(show: true,myLocationType: MyLocationType.RotateNoCenter));
+                await controller.showMyLocation(MyLocationOption(
+                    show: true, myLocationType: MyLocationType.RotateNoCenter));
                 _navToMyPosition();
               }
             },
           ),
         ),
-        RaisedButton(
-          child: Text('更改颜色'),
-          onPressed: () async {
-            MapType mapType = await _controller.getMapType();
-            if(mapType == MapType.Standard){
-              _controller.setMapType(MapType.Night);
-            }else{
-              _controller.setMapType(MapType.Standard);
-            }
-
-          },
-        ),
-        RaisedButton(
-          child: Text('定位到我的位置'),
-          onPressed: () async {
-            _navToMyPosition();
-          },
-        ),
-        RaisedButton(
-          child: Text('设置指示器图标'),
-          onPressed: () async {
-            _controller.setIconUri(createLocalImageConfiguration(context), Uri.parse('images/test_icon.png'),);
-          },
+        Wrap(
+          spacing: 10,
+          children: <Widget>[
+            RaisedButton(
+              child: Text('更改颜色'),
+              onPressed: () async {
+                MapType mapType = await _controller.getMapType();
+                if (mapType == MapType.Standard) {
+                  _controller.setMapType(MapType.Night);
+                } else {
+                  _controller.setMapType(MapType.Standard);
+                }
+              },
+            ),
+            RaisedButton(
+              child: Text('定位到我的位置'),
+              onPressed: () async {
+                _navToMyPosition();
+              },
+            ),
+            RaisedButton(
+              child: Text('设置指示器图标'),
+              onPressed: () async {
+                _controller.setIconUri(
+                  createLocalImageConfiguration(context),
+                  Uri.parse('images/test_icon.png'),
+                );
+              },
+            ),
+            RaisedButton(
+              child: Text('添加Marker'),
+              onPressed: () async {
+                var latlng = await _controller.getLocation();
+                Marker marker = await _controller
+                    .addMarker(await createMarkerOption(latlng));
+                _markers.add(marker);
+                // 智能注册一次，注册会覆盖上一个函数
+                _controller.setMarkerClickedListener((Marker marker) async {
+                  LatLng latlng = await marker.location;
+                  bool isRed = (await marker.object) != 'blue';
+                  print(isRed);
+                  Color color = isRed ? Colors.blue : Colors.red;
+                  Marker newMarker = await _controller.addMarker(
+                    MarkerOption(
+                      anchorU: 0.5,
+                      anchorV: 0.5,
+                      latLng: LatLng(latlng.latitude, latlng.longitude),
+                      widget: _buildMarker(color: color),
+                      object: isRed ? 'blue' : 'red',
+                    ),
+                  );
+                  _markers.add(newMarker); //添加新的 marker
+                  //点击移除旧的，以达到视觉上的更改
+                  marker.remove();
+                  return false;
+                });
+              },
+            ),
+            RaisedButton(
+              child: Text('清除marker'),
+              onPressed: () {
+                _controller.clearMarkers(_markers);
+              },
+            ),
+          ],
         )
       ],
     );
