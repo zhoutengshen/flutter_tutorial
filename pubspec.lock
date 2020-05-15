@@ -11,9 +11,9 @@ packages:
   amap_map_fluttify:
     dependency: "direct main"
     description:
-      name: amap_map_fluttify
-      url: "https://pub.flutter-io.cn"
-    source: hosted
+      path: "C:\\Users\\Administrator\\Desktop\\flutter\\amap_map_fluttify"
+      relative: false
+    source: path
     version: "0.22.0"
   archive:
     dependency: transitive
