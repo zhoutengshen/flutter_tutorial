@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:amap_map_fluttify/amap_map_fluttify.dart';
 import 'package:decorated_flutter/decorated_flutter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_tutorial/utils/composited_font_to_image.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class Test extends StatelessWidget {
@@ -57,21 +59,28 @@ class _AmapWidgetState extends State<AmapWidget> {
     _controller.setCenterCoordinate(latlng, zoomLevel: leval);
   }
 
-  Widget _buildMarker({Color color = Colors.red}) {
-    return Container(
-      height: 30,
-      width: 30,
-      child: IconButton(
-        icon: Icon(
-          Icons.favorite,
-          color: color,
-        ),
-      ),
+  List<Widget> widgets = [];
+  CompositedFontToImage cfti = new CompositedFontToImage();
+  Future<Widget> _buildMarker1() async {
+    Uint8List canvasUint8List = await cfti.compositeFontToImage(
+        context,
+        ui.TextStyle(color: Colors.red, fontSize: 4 * 64 / 5),
+        4 * 64 + 20,
+        4 * 64,
+        Offset(0, 4 * 64 / 3),
+        '周騰深',
+        'images/position.png');
+    // 将 Uint8List 转化为 Widget/Image
+    Widget widget = Image.memory(
+      canvasUint8List,
+      width: 40,
+      height: 40,
     );
+    return widget;
   }
 
-  Future<MarkerOption> createMarkerOption(LatLng latlng,
-      {Color color = Colors.red}) async {
+  MarkerOption createMarkerOption(LatLng latlng,
+      {Color color = Colors.red})  {
     double lat = Random.secure().nextDouble() + latlng.latitude;
     double lon = Random.secure().nextDouble() + latlng.longitude;
     LatLng latLng1 = new LatLng(lat, lon);
@@ -79,10 +88,48 @@ class _AmapWidgetState extends State<AmapWidget> {
       anchorU: 0.5,
       anchorV: 0.5,
       latLng: latLng1,
-      widget: _buildMarker(color: color),
+      widget: Container(
+        height: 40,
+        width: 40,
+        child: Image.asset('images/position.png'),
+      ),
     );
   }
 
+  setMarkerClickedListener() {
+    // 智能注册一次，注册会覆盖上一个函数
+    _controller.setMarkerClickedListener((Marker marker) async {
+      LatLng latlng = await marker.location;
+      bool isRed = (await marker.object) != 'blue';
+      print(isRed);
+      Color color = isRed ? Colors.blue : Colors.red;
+      Marker newMarker = await _controller.addMarker(
+        MarkerOption(
+          anchorU: 0.5,
+          anchorV: 0.5,
+          latLng: LatLng(latlng.latitude, latlng.longitude),
+          widget: Container(
+            height: 40,
+            width: 40,
+            child: Image.asset('images/position.png'),
+          ),
+          object: isRed ? 'blue' : 'red',
+        ),
+      );
+      _markers.add(newMarker); //添加新的 marker
+      //点击移除旧的，以达到视觉上的更改
+      marker.remove();
+      return false;
+    });
+  }
+  addMarker(LatLng latlng){
+    MarkerOption option =  createMarkerOption(latlng);
+    _controller.addMarker(option).then((Marker marker) {
+      _markers.add(marker);
+      print('====================');
+      print(_markers.length);
+    });
+  }
   @override
   Widget build(BuildContext context) {
     height = height == 500 ? height - 1 : height + 1;
@@ -156,29 +203,12 @@ class _AmapWidgetState extends State<AmapWidget> {
               child: Text('添加Marker'),
               onPressed: () async {
                 var latlng = await _controller.getLocation();
-                Marker marker = await _controller
-                    .addMarker(await createMarkerOption(latlng));
-                _markers.add(marker);
-                // 智能注册一次，注册会覆盖上一个函数
-                _controller.setMarkerClickedListener((Marker marker) async {
-                  LatLng latlng = await marker.location;
-                  bool isRed = (await marker.object) != 'blue';
-                  print(isRed);
-                  Color color = isRed ? Colors.blue : Colors.red;
-                  Marker newMarker = await _controller.addMarker(
-                    MarkerOption(
-                      anchorU: 0.5,
-                      anchorV: 0.5,
-                      latLng: LatLng(latlng.latitude, latlng.longitude),
-                      widget: _buildMarker(color: color),
-                      object: isRed ? 'blue' : 'red',
-                    ),
-                  );
-                  _markers.add(newMarker); //添加新的 marker
-                  //点击移除旧的，以达到视觉上的更改
-                  marker.remove();
-                  return false;
-                });
+//                createMarkerOption(latlng).then((MarkerOption option) {
+//                  _controller.addMarker(option).then((Marker marker) {
+//                    _markers.add(marker);
+//                  });
+//                });
+                addMarker( latlng);
               },
             ),
             RaisedButton(
