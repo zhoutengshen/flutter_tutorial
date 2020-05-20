@@ -49,12 +49,11 @@ class _AmapWidgetState extends State<AmapWidget> {
   double height = 500;
   AmapController _controller;
   List<Marker> _markers = [];
+  SmoothMoveMarker smoothMoveMarker;
 
   _navToMyPosition() async {
     LatLng latlng = await _controller.getLocation();
     double leval = await _controller.getZoomLevel();
-    print('===================');
-    print(latlng);
     _controller.setCenterCoordinate(latlng, zoomLevel: leval);
   }
 
@@ -64,7 +63,7 @@ class _AmapWidgetState extends State<AmapWidget> {
       width: 30,
       child: IconButton(
         icon: Icon(
-          Icons.favorite_border,
+          Icons.favorite,
           color: color,
         ),
       ),
@@ -117,9 +116,9 @@ class _AmapWidgetState extends State<AmapWidget> {
             onMapCreated: (controller) async {
               if (await requestPermission()) {
                 _controller = controller;
-                await controller.showMyLocation(MyLocationOption(
-                    show: true, myLocationType: MyLocationType.RotateNoCenter));
-                _navToMyPosition();
+//                await _controller.showMyLocation(MyLocationOption(
+//                    show: true, myLocationType: MyLocationType.Follow));
+//                _navToMyPosition();
               }
             },
           ),
@@ -186,6 +185,41 @@ class _AmapWidgetState extends State<AmapWidget> {
               child: Text('清除marker'),
               onPressed: () {
                 _controller.clearMarkers(_markers);
+              },
+            ),
+            RaisedButton(
+              child: Text('添加smoothMarker'),
+              onPressed: () async {
+                List<LatLng> path = [];
+                path.add(LatLng(23.099277, 113.324582));
+                path.add(LatLng(23.099888, 113.325094));
+                path.add(LatLng(23.099235, 113.325856));
+                path.add(LatLng(23.098275, 113.326508));
+                path.add(LatLng(23.097922, 113.327347));
+
+                smoothMoveMarker = await _controller.addSmoothMoveMarker(
+                  SmoothMoveMarkerOption(
+                    path: path,
+                    iconUri: Uri.parse(
+                      'images/bus.png',
+                    ),
+                    imageConfig: createLocalImageConfiguration(context),
+                  ),
+                );
+              },
+            ),
+            RaisedButton(
+              child: Text('清除smoothMoveMarker'),
+              onPressed: () {
+                smoothMoveMarker.remove();
+              },
+            ),
+            RaisedButton(
+              child: Text('显示我的位置'),
+              onPressed: () async {
+                await _controller.showMyLocation(MyLocationOption(
+                    show: true, myLocationType: MyLocationType.RotateNoCenter));
+//                _navToMyPosition();
               },
             ),
           ],
