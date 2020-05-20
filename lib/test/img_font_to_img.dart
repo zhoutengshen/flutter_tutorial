@@ -32,7 +32,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Map<String, Uint8List> _catch = {};
 
   double imgWidth = 4 * 64.0;
-  Future<Uint8List> _assetImageToUint8List([assetStr = 'images/position.png']) async {
+
+  Future<Uint8List> _assetImageToUint8List(
+      [assetStr = 'images/position.png']) async {
     if (_catch[assetStr] != null) {
       print('命中缓存');
       return Future<Uint8List>(() {
@@ -43,74 +45,81 @@ class _MyHomePageState extends State<MyHomePage> {
     AssetImage(assetStr)
         .resolve(createLocalImageConfiguration(context))
         .addListener(ImageStreamListener((ImageInfo imageInfo, syc) async {
-      ByteData byteData = await imageInfo.image.toByteData(format: ui.ImageByteFormat.png);
+      ByteData byteData =
+          await imageInfo.image.toByteData(format: ui.ImageByteFormat.png);
       Uint8List buffList = byteData.buffer.asUint8List();
-      completer.complete(Future<Uint8List>((){
+      completer.complete(Future<Uint8List>(() {
         return buffList;
       }));
       _catch[assetStr] = buffList;
     }));
     return completer.future;
   }
-  Future<ui.Image> uint8ListToUiImage(Uint8List data){
+
+  Future<ui.Image> uint8ListToUiImage(Uint8List data) {
     Completer<ui.Image> completer = Completer();
-    ui.decodeImageFromList(data, (ui.Image image){
-      completer.complete(Future<ui.Image>(()=>image));
+    ui.decodeImageFromList(data, (ui.Image image) {
+      completer.complete(Future<ui.Image>(() => image));
     });
     return completer.future;
   }
 
-  Future<Uint8List> compositeFontToImage() async{
+  Future<Uint8List> compositeFontToImage() async {
     Uint8List data = await _assetImageToUint8List();
     ui.PictureRecorder recorder = new ui.PictureRecorder();
     Canvas canvas = Canvas(recorder);
-    ui.Image image =await uint8ListToUiImage(data);
+    ui.Image image = await uint8ListToUiImage(data);
     final paint = Paint();
-    canvas.drawImage(image, Offset(0,0), paint);
+    canvas.drawImage(image, Offset(0, 0), paint);
     // 在canvas上面绘制文字
     ui.ParagraphBuilder pb = ui.ParagraphBuilder(ui.ParagraphStyle(
       textAlign: TextAlign.center,
       fontWeight: FontWeight.w500,
-      fontSize: imgWidth/5,
+      fontSize: imgWidth / 5,
     ));
-    pb.pushStyle(ui.TextStyle(
-        color: Colors.red,
-        fontSize: imgWidth/5
-    ));
+    pb.pushStyle(ui.TextStyle(color: Colors.red, fontSize: imgWidth / 5));
     pb.addText("周先生");
     ui.ParagraphConstraints pc = ui.ParagraphConstraints(width: imgWidth);
 
     ui.Paragraph paragraph = pb.build()..layout(pc);
     // 将文字画上去
-    canvas.drawParagraph(paragraph, Offset(0,imgWidth/3));
+    canvas.drawParagraph(paragraph, Offset(0, imgWidth / 3));
     // 将 ui.image 图片转化为 Uint8List
-    ui.Image canvasImage =await recorder.endRecording().toImage(imgWidth.toInt(), imgWidth.toInt()+20);
-    ByteData canvasByteData =await canvasImage.toByteData(format: ui.ImageByteFormat.png);
+    ui.Image canvasImage = await recorder
+        .endRecording()
+        .toImage(imgWidth.toInt(), imgWidth.toInt() + 20);
+    ByteData canvasByteData =
+        await canvasImage.toByteData(format: ui.ImageByteFormat.png);
     Uint8List canvasUint8List = Uint8List.view(canvasByteData.buffer);
     return canvasUint8List;
   }
 
-  CompositedFontToImage cfti = new CompositedFontToImage();
-
   List<Widget> widgets = [];
-  click() async{
-    // 这里利用cavans 进行合成
-    // 画图
 
-    Uint8List canvasUint8List = await cfti.compositeFontToImage(context, ui.TextStyle(
-        color: Colors.red,
-        fontSize: imgWidth/5
-    ), 4 * 64 + 20, 4 * 64,  Offset(0,4 * 64/3), '周騰深', 'images/position.png');
+  click() async {
+    CompositedFontToImage cfti =
+        new CompositedFontToImage(context, 'images/position.png');
+    Uint8List canvasUint8List = await cfti.compositeFontToImage(
+        ui.TextStyle(color: Colors.red, fontSize: imgWidth / 5),
+        4 * 64 + 20,
+        4 * 64,
+        Offset(0, 4 * 64 / 3),
+        '周騰深');
 
     // 将 Uint8List 转化为 Widget/Image
-    var widget = Image.memory(canvasUint8List,width: 40,height: 40,);
-    if(widgets.length==0){
+    var widget = Image.memory(
+      canvasUint8List,
+      width: 40,
+      height: 40,
+    );
+    if (widgets.length == 0) {
       widgets.add(widget);
-    }else{
+    } else {
       widgets[0] = widget;
     }
     setState(() {});
   }
+
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(

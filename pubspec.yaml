@@ -28,7 +28,7 @@ dependencies:
   path_provider: ^1.6.7
 #  amap_map_fluttify: ^0.22.0
   amap_map_fluttify:
-    path: C:\Users\Administrator\Desktop\flutter\amap_map_fluttify
+    git: C:\Users\zhouTengShen\Desktop\amap_map_fluttify
 
   permission_handler: ^5.0.0+hotfix.5
   decorated_flutter: ^0.12.11

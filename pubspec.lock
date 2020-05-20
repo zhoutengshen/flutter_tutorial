@@ -11,9 +11,11 @@ packages:
   amap_map_fluttify:
     dependency: "direct main"
     description:
-      path: "C:\\Users\\Administrator\\Desktop\\flutter\\amap_map_fluttify"
-      relative: false
-    source: path
+      path: "."
+      ref: HEAD
+      resolved-ref: "2510908d1d290928c71144780940d9666d28cd54"
+      url: "C:\\Users\\zhouTengShen\\Desktop\\amap_map_fluttify"
+    source: git
     version: "0.22.0"
   archive:
     dependency: transitive

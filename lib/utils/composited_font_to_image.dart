@@ -5,14 +5,23 @@ import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 
 class CompositedFontToImage {
-  Map<String, Uint8List> _catch = {};
+  static Map<String, Future<Uint8List>> _catch = {};
+  static Map<String, Future<ui.Image>> _catchUiImage = {};
+  BuildContext context;
+  String assetImgUrl;
+
+  CompositedFontToImage(context, assetImgUrl) {
+    _assetImageToUint8List(context, assetImgUrl);
+    _assetImageToUiImage(context, assetImgUrl);
+    this.context = context;
+    this.assetImgUrl = assetImgUrl;
+  }
+
   Future<Uint8List> _assetImageToUint8List(context,
       [assetStr = 'images/position.png']) async {
     if (_catch[assetStr] != null) {
       print('命中缓存');
-      return Future<Uint8List>(() {
-        return _catch[assetStr];
-      });
+      return _catch[assetStr];
     }
     Completer<Uint8List> completer = Completer();
     AssetImage(assetStr)
@@ -21,12 +30,31 @@ class CompositedFontToImage {
       ByteData byteData =
           await imageInfo.image.toByteData(format: ui.ImageByteFormat.png);
       Uint8List buffList = byteData.buffer.asUint8List();
+
       completer.complete(Future<Uint8List>(() {
         return buffList;
       }));
-      _catch[assetStr] = buffList;
     }));
-    return completer.future;
+    _catch[assetStr] = completer.future;
+    return _catch[assetStr];
+  }
+
+  Future<ui.Image> _assetImageToUiImage(context,
+      [assetStr = 'images/position.png']) async {
+    if (_catchUiImage[assetStr] != null) {
+      print('命中缓存');
+      return _catchUiImage[assetStr];
+    }
+    Completer<ui.Image> completer = Completer();
+    AssetImage(assetStr)
+        .resolve(createLocalImageConfiguration(context))
+        .addListener(ImageStreamListener((ImageInfo imageInfo, syc) async {
+      completer.complete(Future<ui.Image>(() {
+        return imageInfo.image;
+      }));
+    }));
+    _catchUiImage[assetStr] = completer.future;
+    return _catchUiImage[assetStr];
   }
 
   Future<ui.Image> _uint8ListToUiImage(Uint8List data) {
@@ -38,21 +66,18 @@ class CompositedFontToImage {
   }
 
   Future<Uint8List> compositeFontToImage(
-    context,
     ui.TextStyle textStyle,
     int height,
     int width,
     Offset fontOffset,
     String text,
-    String assetImgUrl,
   ) async {
-    Uint8List data = await _assetImageToUint8List(context,assetImgUrl);
+    ui.Image image = await _catchUiImage[assetImgUrl];
     ui.PictureRecorder recorder = new ui.PictureRecorder();
     Canvas canvas = Canvas(recorder);
-    ui.Image image = await _uint8ListToUiImage(data);
     final paint = Paint();
     canvas.drawImage(image, Offset(0, 0), paint);
-    // 在canvas上面绘制文字
+//    // 在canvas上面绘制文字
     ui.ParagraphBuilder pb = ui.ParagraphBuilder(ui.ParagraphStyle(
       textAlign: TextAlign.center,
       fontWeight: FontWeight.w500,
@@ -62,9 +87,9 @@ class CompositedFontToImage {
     ui.ParagraphConstraints pc =
         ui.ParagraphConstraints(width: width.toDouble());
     ui.Paragraph paragraph = pb.build()..layout(pc);
-    // 将文字画上去
+//    // 将文字画上去
     canvas.drawParagraph(paragraph, fontOffset);
-    // 将 ui.image 图片转化为 Uint8List
+//    // 将 ui.image 图片转化为 Uint8List
     ui.Image canvasImage = await recorder.endRecording().toImage(width, height);
     ByteData canvasByteData =
         await canvasImage.toByteData(format: ui.ImageByteFormat.png);

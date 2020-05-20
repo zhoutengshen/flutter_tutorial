@@ -1,15 +1,33 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:amap_map_fluttify/amap_map_fluttify.dart';
 import 'package:decorated_flutter/decorated_flutter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter_tutorial/utils/composited_font_to_image.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+class MarkerExtend {
+  String color;
+  String lat;
+  String lng;
+
+  MarkerExtend(this.color, this.lat, this.lng);
+
+  String deJsonStr() {
+    Map<String, String> map = {};
+    map['color'] = color;
+    map['lat'] = lat;
+    map['lng'] = lng;
+    return jsonEncode(map);
+  }
+
+  static MarkerExtend encodeStr(str) {
+    Map map = json.decode(str);
+    return MarkerExtend(map['color'], map['lat'], map['lng']);
+  }
+}
 
 class Test extends StatelessWidget {
   @override
@@ -53,6 +71,10 @@ class _AmapWidgetState extends State<AmapWidget> {
   List<Marker> _markers = [];
   SmoothMoveMarker smoothMoveMarker;
 
+  initState() {
+    super.initState();
+  }
+
   _navToMyPosition() async {
     LatLng latlng = await _controller.getLocation();
     double leval = await _controller.getZoomLevel();
@@ -60,38 +82,43 @@ class _AmapWidgetState extends State<AmapWidget> {
   }
 
   List<Widget> widgets = [];
-  CompositedFontToImage cfti = new CompositedFontToImage();
-  Future<Widget> _buildMarker1() async {
-    Uint8List canvasUint8List = await cfti.compositeFontToImage(
-        context,
-        ui.TextStyle(color: Colors.red, fontSize: 4 * 64 / 5),
-        4 * 64 + 20,
-        4 * 64,
-        Offset(0, 4 * 64 / 3),
-        '周騰深',
-        'images/position.png');
-    // 将 Uint8List 转化为 Widget/Image
-    Widget widget = Image.memory(
-      canvasUint8List,
-      width: 40,
-      height: 40,
-    );
-    return widget;
-  }
 
-  MarkerOption createMarkerOption(LatLng latlng,
-      {Color color = Colors.red})  {
-    double lat = Random.secure().nextDouble() + latlng.latitude;
-    double lon = Random.secure().nextDouble() + latlng.longitude;
-    LatLng latLng1 = new LatLng(lat, lon);
+  List<Widget> widgetss = [];
+
+  Future<MarkerOption> createMarkerOption(LatLng latlng,
+      {Color color = Colors.red}) async {
+    MarkerExtend mt = MarkerExtend(color != Colors.blue ? 'red' : 'blue',
+        latlng.latitude.toString(), latlng.longitude.toString());
+    double width = 50;
+
     return MarkerOption(
       anchorU: 0.5,
       anchorV: 0.5,
-      latLng: latLng1,
-      widget: Container(
-        height: 40,
-        width: 40,
-        child: Image.asset('images/position.png'),
+      latLng: latlng,
+      object: mt.deJsonStr(),
+      widget: Stack(
+        children: <Widget>[
+          Image.asset(
+            'images/position.png',
+            height: width,
+            width: width,
+          ),
+          Positioned(
+            left: 0,
+            top: -4,
+            child: Container(
+              width: width,
+              height: width,
+              child: Center(
+                child: Text(
+                  '周腾深' + _markers.length.toString(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: width / 4.5, color: color),
+                ),
+              ),
+            ),
+          )
+        ],
       ),
     );
   }
@@ -99,22 +126,13 @@ class _AmapWidgetState extends State<AmapWidget> {
   setMarkerClickedListener() {
     // 智能注册一次，注册会覆盖上一个函数
     _controller.setMarkerClickedListener((Marker marker) async {
-      LatLng latlng = await marker.location;
-      bool isRed = (await marker.object) != 'blue';
-      print(isRed);
-      Color color = isRed ? Colors.blue : Colors.red;
+      String meStr = await marker.object;
+      MarkerExtend me = MarkerExtend.encodeStr(meStr);
+      Color color = me.color == 'red' ? Colors.blue : Colors.red;
       Marker newMarker = await _controller.addMarker(
-        MarkerOption(
-          anchorU: 0.5,
-          anchorV: 0.5,
-          latLng: LatLng(latlng.latitude, latlng.longitude),
-          widget: Container(
-            height: 40,
-            width: 40,
-            child: Image.asset('images/position.png'),
-          ),
-          object: isRed ? 'blue' : 'red',
-        ),
+        await createMarkerOption(
+            LatLng(double.parse(me.lat), double.parse(me.lng)),
+            color: color),
       );
       _markers.add(newMarker); //添加新的 marker
       //点击移除旧的，以达到视觉上的更改
@@ -122,14 +140,18 @@ class _AmapWidgetState extends State<AmapWidget> {
       return false;
     });
   }
-  addMarker(LatLng latlng){
-    MarkerOption option =  createMarkerOption(latlng);
-    _controller.addMarker(option).then((Marker marker) {
-      _markers.add(marker);
-      print('====================');
-      print(_markers.length);
+
+  addMarker(latlng) {
+    double lat = Random.secure().nextDouble() + latlng.latitude;
+    double lon = Random.secure().nextDouble() + latlng.longitude;
+    createMarkerOption(LatLng(lat, lon)).then((v) {
+      _controller.addMarker(v).then((Marker marker) {
+        _markers.add(marker);
+        setMarkerClickedListener();
+      });
     });
   }
+
   @override
   Widget build(BuildContext context) {
     height = height == 500 ? height - 1 : height + 1;
@@ -163,9 +185,9 @@ class _AmapWidgetState extends State<AmapWidget> {
             onMapCreated: (controller) async {
               if (await requestPermission()) {
                 _controller = controller;
-//                await _controller.showMyLocation(MyLocationOption(
-//                    show: true, myLocationType: MyLocationType.Follow));
-//                _navToMyPosition();
+                await _controller.showMyLocation(MyLocationOption(
+                    show: true, myLocationType: MyLocationType.Follow));
+                _navToMyPosition();
               }
             },
           ),
@@ -202,19 +224,21 @@ class _AmapWidgetState extends State<AmapWidget> {
             RaisedButton(
               child: Text('添加Marker'),
               onPressed: () async {
-                var latlng = await _controller.getLocation();
+//                var latlng = await _controller.getLocation();
 //                createMarkerOption(latlng).then((MarkerOption option) {
 //                  _controller.addMarker(option).then((Marker marker) {
 //                    _markers.add(marker);
 //                  });
 //                });
-                addMarker( latlng);
+                LatLng latlng = LatLng(23.099277, 113.324582);
+                addMarker(latlng);
               },
             ),
             RaisedButton(
               child: Text('清除marker'),
               onPressed: () {
                 _controller.clearMarkers(_markers);
+                _markers = [];
               },
             ),
             RaisedButton(
@@ -226,7 +250,6 @@ class _AmapWidgetState extends State<AmapWidget> {
                 path.add(LatLng(23.099235, 113.325856));
                 path.add(LatLng(23.098275, 113.326508));
                 path.add(LatLng(23.097922, 113.327347));
-
                 smoothMoveMarker = await _controller.addSmoothMoveMarker(
                   SmoothMoveMarkerOption(
                     path: path,
@@ -241,7 +264,7 @@ class _AmapWidgetState extends State<AmapWidget> {
             RaisedButton(
               child: Text('清除smoothMoveMarker'),
               onPressed: () {
-                smoothMoveMarker.remove();
+//                smoothMoveMarker.remove();
               },
             ),
             RaisedButton(
@@ -249,7 +272,7 @@ class _AmapWidgetState extends State<AmapWidget> {
               onPressed: () async {
                 await _controller.showMyLocation(MyLocationOption(
                     show: true, myLocationType: MyLocationType.RotateNoCenter));
-//                _navToMyPosition();
+                _navToMyPosition();
               },
             ),
           ],
